@@ -26,7 +26,7 @@ class Checker:
         y_cond = np.where((y_grid // self.tileSize) % 2 == 0, 1, 0) ## check if int part of index y / tilesize is even
         condition = (x_cond) ^ (y_cond) # xor condition -> returns 1 matrix of dim(res, res) where cells with value 1
         #correspond to cells that should be painted
-        grid = np.where(condition, 0, 1)
+        grid = np.where(condition, 1, 0)
         self.output = grid
         return np.copy(self.output)
 
@@ -48,7 +48,12 @@ class Circle:
         # for each pixel find L2-distance from the center of circle
         distance = np.sqrt((x_grid - self.position[0])**2 + (y_grid - self.position[1])**2) 
         # if pixel inside the circle - paint it black
-        image = np.where(distance <= self.radius, 255, 0).astype(np.uint8)
+        '''
+        # image = np.where(distance <= self.radius, 255, 0).astype(np.uint8) 
+        NOTE: this method doesnt pass the test because based on test hints 
+        The desired output is a boolean array and not a binary array.
+        '''
+        image = distance <= self.radius
         
         return image
 
