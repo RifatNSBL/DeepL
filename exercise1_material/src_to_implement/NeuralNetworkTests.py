@@ -2,7 +2,7 @@ import unittest
 from Layers import *
 from Optimization import *
 import numpy as np
-import NeuralNetwork
+import neuralnetwork
 import matplotlib.pyplot as plt
 import tabulate
 import argparse
