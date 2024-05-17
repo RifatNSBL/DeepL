@@ -2,7 +2,7 @@ import numpy as np
 from sklearn.datasets import load_iris
 from sklearn.preprocessing import OneHotEncoder
 from random import shuffle
-
+import typing
 
 def gradient_check(layers, input_tensor, label_tensor):
     epsilon = 1e-5
