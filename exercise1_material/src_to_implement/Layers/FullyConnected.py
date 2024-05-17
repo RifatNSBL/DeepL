@@ -1,21 +1,21 @@
 import numpy as np
-from Layers import Base
+from .Base import BaseLayer
 from Optimization import Optimizers
 
-class FullyConnected(Base.BaseLayer):
+class FullyConnected(BaseLayer):
 
-    def __init__(self, input_size, output_size):
+    def __init__(self, input_size:int, output_size:int):
         super().__init__()
+        self.input_size = input_size
+        self.output_size = output_size
         self.trainable = True
-        self.weights = np.random.uniform(size=(input_size+1, output_size))
-        self.bias = np.random.uniform(size=(1, output_size))
+        self.weights = np.random.rand(self.input_size + 1, self.output_size)
         self._optimizers = None
 
 
     def forward(self, input_tensor):
-        self.x0 = np.ones((input_tensor.shape[0],1))
-        self.fistLayer = np.hstack((input_tensor, self.x0))
-        # self.fistLayer = input_tensor
+        x0 = np.ones((input_tensor.shape[0],1))
+        self.fistLayer = np.hstack((input_tensor, x0))
         self.lastLayer = np.dot(self.fistLayer, self.weights)
         return self.lastLayer
     
@@ -28,13 +28,12 @@ class FullyConnected(Base.BaseLayer):
         self._optimizers = optimizers
     
 
-    def backward(self, error_tensor):
+    def backward(self, error_tensor:np.ndarray):
         self.gradient_bias = np.dot(self.weights, error_tensor.T)
-        grad_W = np.dot(self.fistLayer.T, error_tensor)
-        self.gradient_weights = grad_W
+        self.gradient_weights = np.dot(self.fistLayer.T, error_tensor)
         
-        if self._optimizers != None:
-            self.weights = self._optimizers.calculate_update(self.weights, grad_W)
+        if self._optimizers is not None:
+            self.weights = self._optimizers.calculate_update(self.weights, self.gradient_weights)
         
         error_output = np.dot(error_tensor, self.weights.T)
-        return error_output[:,:-1]
+        return error_output[:, :-1]
