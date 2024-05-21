@@ -11,13 +11,11 @@ class FullyConnected(BaseLayer):
         self.weights = np.random.rand(self.input_size + 1, self.output_size)
         self._optimizer = None
 
-
     def forward(self, input_tensor):
         x0 = np.ones((input_tensor.shape[0],1))
         self.fistLayer = np.hstack((input_tensor, x0))
         self.lastLayer = np.dot(self.fistLayer, self.weights)
         return self.lastLayer
-
 
     def backward(self, error_tensor:np.ndarray):
         self.gradient_bias = np.dot(self.weights, error_tensor.T)
@@ -28,7 +26,6 @@ class FullyConnected(BaseLayer):
         
         error_output = np.dot(error_tensor, self.weights.T)
         return error_output[:, :-1]
-
 
     @property
     def optimizer(self):
