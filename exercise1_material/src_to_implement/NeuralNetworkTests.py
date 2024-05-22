@@ -1,8 +1,8 @@
 import unittest
-from Layers import FullyConnected, Helpers, ReLU, Base
+from Layers import FullyConnected, Helpers, ReLU, Base, SoftMax
 from Optimization import Loss, Optimizers
 import numpy as np
-import neuralnetwork
+import NeuralNetwork
 import matplotlib.pyplot as plt
 import tabulate
 import argparse
@@ -427,7 +427,7 @@ class TestNeuralNetwork1(unittest.TestCase):
 
     def test_append_layer(self):
         # this test checks if your network actually appends layers and whether it copies the optimizer to these layers
-        net = neuralnetwork.neuralnetwork(Optimizers.Sgd(1))
+        net = NeuralNetwork.NeuralNetwork(Optimizers.Sgd(1))
         fcl_1 = FullyConnected.FullyConnected(1, 1)
         net.append_layer(fcl_1)
         fcl_2 = FullyConnected.FullyConnected(1, 1)
@@ -435,14 +435,14 @@ class TestNeuralNetwork1(unittest.TestCase):
 
         self.assertEqual(len(net.layers), 2,
                          msg="Possible error: The append_layer function is not yet implemented or wrong implemented."
-                             "Make sure that the neuralnetwork class is able to add a layer and stores it in a list "
+                             "Make sure that the NeuralNetwork class is able to add a layer and stores it in a list "
                              "called layers.")
         self.assertFalse(net.layers[0].optimizer is net.layers[1].optimizer,
                          msg="Possible error: The optimizer is not copied for each layer. Make sure to perform a "
                              "deepcopy of the optimizer and assign it to every trainable layer.")
 
     def test_data_access(self):
-        net = neuralnetwork.neuralnetwork(Optimizers.Sgd(1))
+        net = NeuralNetwork.NeuralNetwork(Optimizers.Sgd(1))
         categories = 3
         input_size = 4
         net.data_layer = Helpers.IrisData(50)
@@ -464,7 +464,7 @@ class TestNeuralNetwork1(unittest.TestCase):
                                 " inout_tensor for the forward.")
 
     def test_iris_data(self):
-        net = neuralnetwork.neuralnetwork(Optimizers.Sgd(1e-3))
+        net = NeuralNetwork.NeuralNetwork(Optimizers.Sgd(1e-3))
         categories = 3
         input_size = 4
         net.data_layer = Helpers.IrisData(50)
