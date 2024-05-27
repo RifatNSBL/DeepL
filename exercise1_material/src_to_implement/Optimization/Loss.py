@@ -6,9 +6,7 @@ class CrossEntropyLoss():
 
     def forward(self, prediction_tensor, label_tensor):
         self.nextIn = prediction_tensor
-        y_hat = prediction_tensor
-        y = label_tensor
-        loss = -np.sum(np.log(y_hat + np.finfo(float).eps) * y)
+        loss = -np.sum(np.log(prediction_tensor + np.finfo(float).eps) * label_tensor)
         return loss
     
     def backward(self, label_tensor):

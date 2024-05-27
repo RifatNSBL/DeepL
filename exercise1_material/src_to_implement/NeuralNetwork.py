@@ -10,7 +10,11 @@ class NeuralNetwork():
         self.loss_layer = None
 
     def forward(self):
-        input_tensor, self.label_tensor = copy.deepcopy(self.data_layer.next())
+        input_tensor, self.label_tensor = copy.deepcopy(self.data_layer.next()) 
+        """
+        A deep copy means that all levels of the object are copied recursively, 
+        ensuring that changes to the new object do not affect the original object and vice versa.
+        """
         for layer in self.layers:
             input_tensor = layer.forward(input_tensor)
         
@@ -18,7 +22,6 @@ class NeuralNetwork():
         return output
     
     def backward(self):
-        y = copy.deepcopy(self.label_tensor)
         y = self.loss_layer.backward(self.label_tensor)
         for layer in reversed(self.layers):
             y = layer.backward(y)
@@ -29,7 +32,7 @@ class NeuralNetwork():
         self.layers.append(layer)
 
     def train(self, iterations):
-        for epoch in range(iterations):
+        for iteration in range(iterations):
             loss = self.forward()
             self.loss.append(loss)
             self.backward()
