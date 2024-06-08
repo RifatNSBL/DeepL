@@ -9,7 +9,6 @@ class Constant:
 
 class UniformRandom:
     def initialize(self, weights_shape, fan_in, fan_out):
-
         return np.random.uniform(0,1,size=weights_shape)
 
 class Xavier:

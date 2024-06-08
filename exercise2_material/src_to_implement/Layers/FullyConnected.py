@@ -10,6 +10,7 @@ class FullyConnected(BaseLayer):
         self.trainable = True
         self.weights = np.random.rand(self.input_size + 1, self.output_size)
         self._optimizer = None
+        self._initializer = None
 
     def forward(self, input_tensor):
         x0 = np.ones((input_tensor.shape[0],1))
@@ -27,8 +28,10 @@ class FullyConnected(BaseLayer):
         error_output = np.dot(error_tensor, self.weights.T)
         return error_output[:, :-1]
     
-    # def initialize(self, weights_initializer, bias_initializer):
-    #     self.weights = weights_initializer
+    def initialize(self, weights_initializer, bias_initializer):
+        self.weights = weights_initializer.Initialize((self.input_size + 1, self.output_size), self.input_size + 1, self.output_size)
+        self.bias = bias_initializer.Initialize((self.input_size , 1), self.input_size , 1)
+        self.weights = np.vstack((self.weights, self.bias))
 
     @property
     def optimizer(self):
