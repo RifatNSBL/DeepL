@@ -8,8 +8,8 @@ class NeuralNetwork():
         self.layers = list()           
         self.data_layer = None      
         self.loss_layer = None
-        # self.weight_initializer = weight_initializer
-        # self.bias_initializer = bias_initializer
+        self.weight_initializer = weight_initializer
+        self.bias_initializer = bias_initializer
 
     def forward(self):
         input_tensor, self.label_tensor = copy.deepcopy(self.data_layer.next()) 
@@ -32,6 +32,7 @@ class NeuralNetwork():
         if layer.trainable:
             # layer.weights = self.weight_initializer.initialize()
             # layer.biases = self.bias_initializer.initialize()
+            layer.initialize(self.weight_initializer, self.bias_initializer)
             layer.optimizer = copy.deepcopy(self.optimizer)
         self.layers.append(layer)
 

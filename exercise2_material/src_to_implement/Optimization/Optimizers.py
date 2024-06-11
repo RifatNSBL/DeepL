@@ -12,12 +12,9 @@ class SgdWithMomentum:
     def __init__(self, learning_rate:float, momentum_rate):
         self.learning_rate = learning_rate
         self.momentum_rate = momentum_rate
-        self.v = None
+        self.v = 0
 
     def calculate_update(self, weight_tensor, gradient_tensor):
-        if self.v == None:
-            self.v = np.zeros_like(weight_tensor)
-            
         self.v = self.momentum_rate * self.v - self.learning_rate * gradient_tensor
         return weight_tensor + self.v
 
@@ -26,15 +23,11 @@ class Adam:
         self.learning_rate = learning_rate
         self.mu = mu
         self.rho = rho
-        self.v = None
-        self.r = None
+        self.v = 0
+        self.r = 0
         self.t = 0
 
     def calculate_update(self, weight_tensor, gradient_tensor):
-        if self.v == None:
-            self.v = np.zeros_like(weight_tensor)
-        if self.r == None:
-            self.r = np.zeros_like(weight_tensor)
 
         self.t += 1
 
