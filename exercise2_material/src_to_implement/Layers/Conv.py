@@ -26,21 +26,21 @@ class Conv(BaseLayer):
 
         if len(self.convolution_shape) == 2:
             c, m = self.convolution_shape
-            height = self.input_tensor.shape[2]
-            stride_h = self.stride_shape[0]
-            output_h = int(np.ceil(height / stride_h))
-            output_shape = (self.batch_size, self.num_kernals, output_h)
+            self.height = self.input_tensor.shape[2]
+            self.stride_h = self.stride_shape[0]
+            self.output_h = int(np.ceil(self.height / self.stride_h))
+            self.output_shape = (self.batch_size, self.num_kernals, self.output_h)
         else:
             c, m, n = self.convolution_shape
-            height = self.input_tensor.shape[2]
-            width = self.input_tensor.shape[3]
-            stride_h = self.stride_shape[0]
-            stride_w = self.stride_shape[1]
-            output_h = int(np.ceil(height / stride_h))
-            output_w = int(np.ceil(width / stride_w))
-            output_shape = (self.batch_size, self.num_kernals, output_h, output_w)
+            self.height = self.input_tensor.shape[2]
+            self.width = self.input_tensor.shape[3]
+            self.stride_h = self.stride_shape[0]
+            self.stride_w = self.stride_shape[1]
+            self.output_h = int(np.ceil(self.height / self.stride_h))
+            self.output_w = int(np.ceil(self.width / self.stride_w))
+            self.output_shape = (self.batch_size, self.num_kernals, self.output_h, self.output_w)
 
-        output = np.zeros(output_shape)
+        output = np.zeros(self.output_shape)
 
         for b in range(self.batch_size):
             for k in range(self.num_kernals): 
@@ -56,12 +56,10 @@ class Conv(BaseLayer):
                 conv_stacked = np.stack(conv, axis=0)
                 conv_sum = np.sum(conv_stacked, axis=0)
 
-                self.forwad_shape = conv_sum.shape
-
                 if len(self.convolution_shape) == 2:
-                    conv_sum = conv_sum[::stride_h]
+                    conv_sum = conv_sum[::self.stride_h]
                 else:
-                    conv_sum = conv_sum[::stride_h, ::stride_w]
+                    conv_sum = conv_sum[::self.stride_h, ::self.stride_w]
 
                 # print('conv_sum: ', conv_sum.shape, '\n')
                 # print('bias: ', self.bias.shape, '\n')
@@ -69,107 +67,48 @@ class Conv(BaseLayer):
         return output
 
     def backward(self, error_tensor):
-        # grad_in = np.zeros(self.input_tensor.shape)
-        # new_error = np.zeros(self.forwad_shape)
-        # stride_h = self.stride_shape[0]
-        # stride_w = self.stride_shape[1]
-        # if len(self.convolution_shape) == 2:
-        # new_error[::stride_h] = error_tensor
+        grad_in = np.zeros_like(self.input_tensor)
 
-
-
-        grad_in = np.zeros(self.input_tensor.shape)
-        new_weights = np.copy(self.weights)
-
-        if len(self.convolution_shape)==3:
-            tmp_grad_weight = np.zeros((error_tensor.shape[0], self.weights.shape[0], self.weights.shape[1],
-                                              self.weights.shape[2], self.weights.shape[3]))
-            ##padding
-            conv_output = []
-            batch_size = self.input_tensor.shape[0]
-            for batch in range(batch_size):
-                out_tot = []
-                kernels = self.input_tensor.shape[1]
-                for kernel in range(kernels):
-                    
-                    height = self.convolution_shape[1]
-                    width = self.convolution_shape[2]
-                    pad_height = (height // 2, height // 2)
-                    pad_width = (width // 2, width // 2)
-                    
-                    out_tot.append(np.pad(self.input_tensor[batch, kernel], (pad_height, pad_width), mode='constant'))
-
-                    if self.convolution_shape[2]%2 ==0:
-                        out_tot[kernel] = out_tot[kernel][:,:-1]
-                    if self.convolution_shape[1]%2 ==0:
-                        out_tot[kernel] = out_tot[kernel][:-1,:]
-
-                conv_part = np.stack(out_tot, axis=0)
-                
-                conv_output.append(conv_part)
-            padded_input = np.stack(conv_output, axis=0)
-
-            batch_size = error_tensor.shape[0]
-            for batch in range(batch_size):
-                kernels = error_tensor.shape[1]
-                for kernel in range(kernels):
-
-                    temp = signal.resample(error_tensor[batch, kernel], error_tensor[batch, kernel].shape[0] * self.stride_shape[0], axis=0)
-                    temp = signal.resample(temp, error_tensor[batch, kernel].shape[1] * self.stride_shape[1], axis=1)
-                    temp = temp[:self.input_tensor.shape[2], :self.input_tensor.shape[3]]
-                    mask_rows = np.arange(temp.shape[0]) % self.stride_shape[0] != 0
-                    mask_cols = np.arange(temp.shape[1]) % self.stride_shape[1] != 0
-                    temp[mask_rows, :] = 0
-                    temp[:, mask_cols] = 0  
-
-                    channels = self.input_tensor.shape[1]
-                    for channel in range(channels):
-                        tmp_grad_weight[batch, kernel, channel] = signal.correlate(padded_input[batch, channel], temp, mode='valid')
-          
-            self.gradient_weights = tmp_grad_weight.sum(axis=0)
-
-        axes = tuple(range(len(new_weights.shape)))
-        if len(self.convolution_shape) == 3:
-            axes = axes[1], axes[0], axes[2], axes[3]
-        elif len(self.convolution_shape) == 2:
-            axes = axes[1], axes[0], axes[2]
-
-        new_weights = np.transpose(new_weights, axes)
+        #padding 
+        pad_y_1 = self.weights.shape[2] // 2
+        if self.weights.shape[2] % 2 == 0:  # even filter length -> non-symmetric padding required
+            pad_y_2 = pad_y_1 - 1  # shorter padding at end of this dim
+        else:
+            pad_y_2 = pad_y_1
+        if len(self.weights.shape[2:]) > 1:  # 2D kernel
+            pad_x_1 = self.weights.shape[3] // 2
+            if self.weights.shape[3] % 2 == 0:
+                pad_x_2 = pad_x_1 - 1  # shorter padding at end of this dim
+            else:
+                pad_x_2 = pad_x_1
         
-        batch_size= error_tensor.shape[0]
-        for batch in range(batch_size):
-            kernels =new_weights.shape[0]    
-            for kernel in range(kernels):
-                out_tot = []
-                channels = new_weights.shape[1]
-                for channel in range(channels):
 
-                    if len(self.convolution_shape) == 3:
-                        temp = signal.resample(error_tensor[batch, channel], error_tensor[batch, channel].shape[0] * self.stride_shape[0], axis=0)
-                        temp = signal.resample(temp, error_tensor[batch, channel].shape[1] * self.stride_shape[1], axis=1)
-                        temp = temp[:self.input_tensor.shape[2], :self.input_tensor.shape[3]]
-                        mask_rows = np.arange(temp.shape[0]) % self.stride_shape[0] != 0
-                        mask_cols = np.arange(temp.shape[1]) % self.stride_shape[1] != 0
-                        temp[mask_rows, :] = 0
-                        temp[:, mask_cols] = 0
+        if len(self.convolution_shape) == 2:
+            new_error = np.zeros((error_tensor.shape[0], error_tensor.shape[1], self.height))
+            new_error[:,:, ::self.stride_h] = error_tensor
+        else:
+            new_error = np.zeros((error_tensor.shape[0], error_tensor.shape[1], self.height, self.width))
+            new_error[:,:, ::self.stride_h, ::self.stride_w] = error_tensor
 
-                    elif len(self.convolution_shape) == 2:
-                        temp = signal.resample(error_tensor[batch, channel], error_tensor[batch, channel].shape[0] * self.stride_shape[0], axis=0)
-                        temp = temp[:self.input_tensor.shape[2]]
-                        mask_rows = np.arange(temp.shape[0]) % self.stride_shape[0] != 0
-                        temp[mask_rows] = 0
+        self._gradient_weights = np.zeros(self.weights.shape)
+        self._gradient_bias = np.zeros(self.bias.shape)
 
-                    out_tot.append(signal.convolve(temp, new_weights[kernel, channel], mode='same', method='direct'))
+        for b in range(self.batch_size):
+            input = self.input_tensor[b,:]
+            for k in range(self.num_kernals):
+                for c in range(self.channel_size):
+                    grad_in[b, c] += signal.convolve(new_error[b, k], self.weights[k, c], mode='same')
 
-                temp2 = np.stack(out_tot, axis=0)
-                temp2 = temp2.sum(axis=0)
-                grad_in[batch, kernel] = temp2
+                    if len(self.weights.shape[2:]) > 1:
+                        padded_input = np.pad(input[c,:], ((pad_y_1, pad_y_2), (pad_x_1, pad_x_2)),
+                                        mode='constant', constant_values=0)
+                    else:
+                        padded_input = np.pad(input[c,:], (pad_y_1, pad_y_2),
+                                        mode='constant', constant_values=0)
 
-       
-        if len(self.convolution_shape)==3:
-            self.gradient_bias = np.sum(error_tensor, axis=(0,2,3))
-        elif len(self.convolution_shape)==2:
-            self.gradient_bias = np.sum(error_tensor, axis=(0,2))
+
+                    self._gradient_weights[k, c] += signal.correlate(padded_input, new_error[b, k], mode='valid')
+                self._gradient_bias[k] += np.sum(new_error[b, k])
 
         if self._optimizer:
             self.weights = self._optimizer.calculate_update(self.weights, self._gradient_weights)
@@ -177,7 +116,6 @@ class Conv(BaseLayer):
             self.bias = self._bias_optimizer.calculate_update(self.bias, self._gradient_bias)
 
         return grad_in
-
     
     def initialize(self, weights_initializer, bias_initializer):
         fan_in = np.prod(self.convolution_shape)
@@ -191,6 +129,13 @@ class Conv(BaseLayer):
     @gradient_weights.setter
     def gradient_weights(self, value):
         self._gradient_weights = value
+
+    @property
+    def gradient_bias(self):
+        return self._gradient_bias
+    @gradient_bias.setter
+    def gradient_bias(self, value):
+        self._gradient_bias = value
 
     @property
     def optimizer(self):
